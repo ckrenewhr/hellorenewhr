@@ -1,0 +1,84 @@
+_schema-version: "3.2"
+ID: hellorenewhr
+version: 0.0.1
+modules:
+- name: hellorenewhr-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: hellorenewhr-destination-service
+    parameters:
+      content-target: true
+  - name: hellorenewhr_html_repo_host
+    parameters:
+      service-key:
+        name: hellorenewhr_html_repo_host-key
+  - name: uaa_hellorenewhr
+    parameters:
+      service-key:
+        name: uaa_hellorenewhr-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: hellorenewhrsol_hellorenewhr_html_repo_host
+          ServiceInstanceName: hellorenewhr-html5-app-host-service
+          ServiceKeyName: hellorenewhr_html_repo_host-key
+          sap.cloud.service: hellorenewhrsol
+        - Authentication: OAuth2UserTokenExchange
+          Name: hellorenewhrsol_uaa_hellorenewhr
+          ServiceInstanceName: hellorenewhr-xsuaa-service
+          ServiceKeyName: uaa_hellorenewhr-key
+          sap.cloud.service: hellorenewhrsol
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: hellorenewhr_ui_deployer
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: hellorenewhr_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - uimodule-content.zip
+      name: uimodule
+      target-path: resources/
+- name: uimodule
+  type: html5
+  path: uimodule
+  build-parameters:
+    builder: custom
+    commands:
+    - npm run build
+    supported-platforms: []
+resources:
+- name: hellorenewhr-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      version: 1.0.0
+    service: destination
+    service-name: hellorenewhr-destination-service
+    service-plan: lite
+- name: hellorenewhr_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: hellorenewhr-html5-app-host-service
+    service-plan: app-host
+- name: uaa_hellorenewhr
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: hellorenewhr-xsuaa-service
+    service-plan: application
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm install
